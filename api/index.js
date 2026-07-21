@@ -13,6 +13,10 @@ if (fs.existsSync(configPath)) {
     config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
     if (process.env.TOKEN) {
       config.TOKEN = process.env.TOKEN;
+    } else if ((!config.TOKEN || config.TOKEN === 'YOUR_DISCORD_BOT_TOKEN') && config.TOKEN_B64) {
+      try {
+        config.TOKEN = Buffer.from(config.TOKEN_B64, 'base64').toString('utf-8');
+      } catch (e) {}
     }
   } catch (err) {
     console.error('Error reading config.json:', err);

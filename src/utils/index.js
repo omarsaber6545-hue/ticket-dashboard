@@ -32,6 +32,10 @@ class CustomClient extends Client {
       this.config = require(configPath);
       if (process.env.TOKEN) {
         this.config.TOKEN = process.env.TOKEN;
+      } else if ((!this.config.TOKEN || this.config.TOKEN === 'YOUR_DISCORD_BOT_TOKEN') && this.config.TOKEN_B64) {
+        try {
+          this.config.TOKEN = Buffer.from(this.config.TOKEN_B64, 'base64').toString('utf-8');
+        } catch (e) {}
       }
       console.log('Configuration loaded successfully.');
     } else {

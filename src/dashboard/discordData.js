@@ -3,7 +3,14 @@ const { REST, Routes, ChannelType } = require('discord.js');
 async function getGuildData(client) {
   const config = client.config || {};
   const guildID = config.guildID;
-  const token = process.env.TOKEN || config.TOKEN;
+  let token = process.env.TOKEN || config.TOKEN;
+  if (!token || token === 'YOUR_DISCORD_BOT_TOKEN') {
+    if (config.TOKEN_B64) {
+      try {
+        token = Buffer.from(config.TOKEN_B64, 'base64').toString('utf-8');
+      } catch (e) {}
+    }
+  }
 
   let channels = [];
   let categories = [];
