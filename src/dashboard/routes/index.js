@@ -25,38 +25,35 @@ module.exports = (client) => {
 
         try {
             const guildID = config.guildID;
-            if (!guildID) {
-                console.error('guildID is not defined in config.json.');
-                return res.status(500).send('Server configuration error: guildID not set.');
-            }
+            if (guildID && client && client.guilds && typeof client.guilds.fetch === 'function') {
+                console.log('Attempting to fetch guild with ID:', guildID);
+                const guild = await client.guilds.fetch(guildID).catch((error) => {
+                    console.error(`Failed to fetch guild with ID ${guildID}:`, error);
+                    return null;
+                });
 
-            console.log('Attempting to fetch guild with ID:', guildID);
-            const guild = await client.guilds.fetch(guildID).catch((error) => {
-                console.error(`Failed to fetch guild with ID ${guildID}:`, error);
-                return null;
-            });
+                if (guild) {
+                    console.log(`Guild fetched successfully: ${guild.name}`);
+                    channels = guild.channels.cache
+                        ? guild.channels.cache
+                            .filter(c => [ChannelType.GuildText, ChannelType.GuildVoice].includes(c.type))
+                            .map(c => ({ id: c.id, name: c.name, type: c.type }))
+                        : [];
 
-            if (guild) {
-                console.log(`Guild fetched successfully: ${guild.name}`);
-                channels = guild.channels.cache
-                    .filter(c => [ChannelType.GuildText, ChannelType.GuildVoice].includes(c.type))
-                    .map(c => ({ id: c.id, name: c.name, type: c.type }));
+                    categories = guild.channels.cache
+                        ? guild.channels.cache
+                            .filter(c => c.type === ChannelType.GuildCategory)
+                            .map(c => ({ id: c.id, name: c.name }))
+                        : [];
 
-                categories = guild.channels.cache
-                    .filter(c => c.type === ChannelType.GuildCategory)
-                    .map(c => ({ id: c.id, name: c.name }));
-
-                await guild.members.fetch();
-                members = guild.members.cache;
-                totalMembers = members.size;
-                onlineMembers = members.filter(member => member.presence && member.presence.status !== 'offline').size;
-            } else {
-                console.error(`Guild with ID ${guildID} not found or bot lacks access.`);
-                return res.status(500).send('Server configuration error: Guild not found.');
+                    await guild.members.fetch().catch(() => {});
+                    members = guild.members.cache || new Map();
+                    totalMembers = members.size || 0;
+                    onlineMembers = members.filter ? members.filter(member => member.presence && member.presence.status !== 'offline').size : 0;
+                }
             }
         } catch (error) {
-            console.error('Error loading config.json:', error);
-            return res.status(500).send('Server configuration error.');
+            console.error('Non-fatal error loading guild data for dashboard:', error);
         }
 
         const ticketCount = config.optionConfig ? Object.keys(config.optionConfig).length : 0;

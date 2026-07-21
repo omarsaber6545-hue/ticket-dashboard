@@ -7,8 +7,8 @@ module.exports = (client) => {
 
     const fetchGuildAndRoles = async (config) => {
         const guildID = config.guildID;
-        if (!guildID) {
-            throw new Error('guildID is not defined in config.json.');
+        if (!guildID || !client || !client.guilds || typeof client.guilds.fetch !== 'function') {
+            return [];
         }
 
         console.log('Attempting to fetch guild with ID:', guildID);
@@ -17,8 +17,8 @@ module.exports = (client) => {
             return null;
         });
 
-        if (!guild) {
-            throw new Error('Guild not found or bot lacks access.');
+        if (!guild || !guild.roles || !guild.roles.cache) {
+            return [];
         }
 
         console.log(`Guild fetched successfully: ${guild.name}`);
@@ -35,12 +35,7 @@ module.exports = (client) => {
         let message = req.query.message || null;
         let error = req.query.error || null;
 
-        try {
-            roles = await fetchGuildAndRoles(config);
-        } catch (err) {
-            console.error(err.message);
-            return res.status(500).send(`Server configuration error: ${err.message}`);
-        }
+        roles = await fetchGuildAndRoles(config).catch(() => []);
 
         if (!config.ticketOptions) config.ticketOptions = [];
         if (!config.optionConfig) config.optionConfig = {};
@@ -53,12 +48,7 @@ module.exports = (client) => {
         let config = client.config;
         let roles = [];
 
-        try {
-            roles = await fetchGuildAndRoles(config);
-        } catch (err) {
-            console.error(err.message);
-            return res.redirect('/sections?error=' + encodeURIComponent(`Server configuration error: ${err.message}`));
-        }
+        roles = await fetchGuildAndRoles(config).catch(() => []);
 
         if (!config.ticketOptions) config.ticketOptions = [];
         if (!config.optionConfig) config.optionConfig = {};
@@ -86,7 +76,9 @@ module.exports = (client) => {
         try {
             await fs.writeFile(configPath, JSON.stringify(config, null, 2), 'utf8');
             console.log('config.json updated successfully.');
-            await client.reloadConfig();
+            if (client && typeof client.reloadConfig === 'function') {
+              await client.reloadConfig();
+            }
         } catch (writeErr) {
             console.error('Error updating config.json:', writeErr);
             return res.redirect('/sections?error=' + encodeURIComponent('Failed to add section.'));
@@ -98,13 +90,6 @@ module.exports = (client) => {
     router.post('/edit', async (req, res) => {
         const configPath = path.resolve(__dirname, '../../../config.json');
         let config = client.config;
-
-        try {
-            await fetchGuildAndRoles(config);
-        } catch (err) {
-            console.error(err.message);
-            return res.redirect('/sections?error=' + encodeURIComponent(`Server configuration error: ${err.message}`));
-        }
 
         const { originalSection, newSectionName, roleId, image, emoji } = req.body;
 
@@ -152,7 +137,9 @@ module.exports = (client) => {
         try {
             await fs.writeFile(configPath, JSON.stringify(config, null, 2), 'utf8');
             console.log('config.json updated successfully.');
-            await client.reloadConfig();
+            if (client && typeof client.reloadConfig === 'function') {
+              await client.reloadConfig();
+            }
         } catch (writeErr) {
             console.error('Error updating config.json:', writeErr);
             return res.redirect('/sections?error=' + encodeURIComponent('Failed to edit section.'));
@@ -178,7 +165,9 @@ module.exports = (client) => {
         try {
             await fs.writeFile(configPath, JSON.stringify(config, null, 2), 'utf8');
             console.log('config.json updated successfully.');
-            await client.reloadConfig();
+            if (client && typeof client.reloadConfig === 'function') {
+              await client.reloadConfig();
+            }
         } catch (writeErr) {
             console.error('Error updating config.json:', writeErr);
             return res.redirect('/sections?error=' + encodeURIComponent('Failed to delete section.'));

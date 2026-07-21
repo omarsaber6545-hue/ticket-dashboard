@@ -8,8 +8,8 @@ module.exports = (client) => {
 
     const fetchGuildAndChannels = async (config) => {
         const guildID = config.guildID;
-        if (!guildID) {
-            throw new Error('guildID is not defined in config.json.');
+        if (!guildID || !client || !client.guilds || typeof client.guilds.fetch !== 'function') {
+            return { channels: [], categories: [] };
         }
 
         console.log('Attempting to fetch guild with ID:', guildID);
@@ -19,17 +19,21 @@ module.exports = (client) => {
         });
 
         if (!guild) {
-            throw new Error('Guild not found or bot lacks access.');
+            return { channels: [], categories: [] };
         }
 
         console.log(`Guild fetched successfully: ${guild.name}`);
         const channels = guild.channels.cache
-            .filter(c => [ChannelType.GuildText, ChannelType.GuildVoice].includes(c.type))
-            .map(c => ({ id: c.id, name: c.name, type: c.type }));
+            ? guild.channels.cache
+                .filter(c => [ChannelType.GuildText, ChannelType.GuildVoice].includes(c.type))
+                .map(c => ({ id: c.id, name: c.name, type: c.type }))
+            : [];
 
         const categories = guild.channels.cache
-            .filter(c => c.type === ChannelType.GuildCategory)
-            .map(c => ({ id: c.id, name: c.name }));
+            ? guild.channels.cache
+                .filter(c => c.type === ChannelType.GuildCategory)
+                .map(c => ({ id: c.id, name: c.name }))
+            : [];
 
         return { channels, categories };
     };
@@ -40,14 +44,9 @@ module.exports = (client) => {
             let channels = [];
             let categories = [];
 
-            try {
-                const fetchedData = await fetchGuildAndChannels(config);
-                channels = fetchedData.channels;
-                categories = fetchedData.categories;
-            } catch (guildError) {
-                console.error(guildError.message);
-                return res.status(500).send(`Server configuration error: ${guildError.message}`);
-            }
+            const fetchedData = await fetchGuildAndChannels(config).catch(() => ({ channels: [], categories: [] }));
+            channels = fetchedData.channels;
+            categories = fetchedData.categories;
 
             res.render('settings', { 
                 config, 
@@ -202,7 +201,9 @@ module.exports = (client) => {
                 try {
                     await fs.writeFile(configPath, JSON.stringify(config, null, 2), 'utf8');
                     console.log('config.json updated successfully.');
-                    await client.reloadConfig();
+                    if (client && typeof client.reloadConfig === 'function') {
+                      await client.reloadConfig();
+                    }
                     console.log('Configuration reloaded.');
                 } catch (writeErr) {
                     console.error('Error writing to config.json:', writeErr);
