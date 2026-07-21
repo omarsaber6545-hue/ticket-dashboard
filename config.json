@@ -1,0 +1,23 @@
+{
+  "TOKEN": "YOUR_DISCORD_BOT_TOKEN",
+  "guildID": "1528611350337818695",
+  "dashboard": {
+    "username": "wick",
+    "password": "wick123",
+    "port": "3000"
+  },
+  "BACKGROUND": "https://cdn.discordapp.com/attachments/993301605685848174/1301619349012363394/1_zJ5x6n7J-6gQ-R3J59K23g.jpg?ex=65c1155d&is=65ae405d&hm=0b9c2d56b12c6a4a5c93b1840e95965277881374a71cfb83f99d5384668578b2",
+  "LINE": "",
+  "categoryID": "1528611851045441556",
+  "logChannel": "1528611948063752392",
+  "feedbackLogChannel": "1528611953034006639",
+  "language": "ar",
+  "sectionType": "list",
+  "optionConfig": {},
+  "ticketOptions": [],
+  "colors": {
+    "Support": "Primary",
+    "Report": "Primary",
+    "Apply Staff": "Primary"
+  }
+}
