@@ -6,6 +6,9 @@ module.exports = (client) => {
     const router = express.Router();
 
     const getUptime = () => {
+        if (!client || !client.uptime || isNaN(client.uptime)) {
+            return 'Online (Vercel)';
+        }
         const totalSeconds = client.uptime / 1000;
         const days = Math.floor(totalSeconds / 86400);
         const hours = Math.floor((totalSeconds % 86400) / 3600);
