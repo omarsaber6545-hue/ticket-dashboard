@@ -1,52 +1,17 @@
 const express = require('express');
 const path = require('path');
 const fs = require('fs').promises;
-const { ChannelType } = require('discord.js');
+const { getGuildData } = require('../discordData');
 
 module.exports = (client) => {
     const router = express.Router();
 
-    const fetchGuildAndChannels = async (config) => {
-        const guildID = config.guildID;
-        if (!guildID || !client || !client.guilds || typeof client.guilds.fetch !== 'function') {
-            return { channels: [], categories: [] };
-        }
-
-        console.log('Attempting to fetch guild with ID:', guildID);
-        const guild = await client.guilds.fetch(guildID).catch((error) => {
-            console.error(`Failed to fetch guild with ID ${guildID}:`, error);
-            return null;
-        });
-
-        if (!guild) {
-            return { channels: [], categories: [] };
-        }
-
-        console.log(`Guild fetched successfully: ${guild.name}`);
-        const channels = guild.channels.cache
-            ? guild.channels.cache
-                .filter(c => [ChannelType.GuildText, ChannelType.GuildVoice].includes(c.type))
-                .map(c => ({ id: c.id, name: c.name, type: c.type }))
-            : [];
-
-        const categories = guild.channels.cache
-            ? guild.channels.cache
-                .filter(c => c.type === ChannelType.GuildCategory)
-                .map(c => ({ id: c.id, name: c.name }))
-            : [];
-
-        return { channels, categories };
-    };
-
     router.get('/', async (req, res) => {
         try {
             const config = client.config;
-            let channels = [];
-            let categories = [];
-
-            const fetchedData = await fetchGuildAndChannels(config).catch(() => ({ channels: [], categories: [] }));
-            channels = fetchedData.channels;
-            categories = fetchedData.categories;
+            const fetchedData = await getGuildData(client);
+            const channels = fetchedData.channels;
+            const categories = fetchedData.categories;
 
             res.render('settings', { 
                 config, 

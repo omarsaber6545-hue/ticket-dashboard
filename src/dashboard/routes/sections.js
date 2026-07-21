@@ -1,41 +1,18 @@
 const express = require('express');
 const path = require('path');
 const fs = require('fs').promises;
+const { getGuildData } = require('../discordData');
 
 module.exports = (client) => {
     const router = express.Router();
 
-    const fetchGuildAndRoles = async (config) => {
-        const guildID = config.guildID;
-        if (!guildID || !client || !client.guilds || typeof client.guilds.fetch !== 'function') {
-            return [];
-        }
-
-        console.log('Attempting to fetch guild with ID:', guildID);
-        const guild = await client.guilds.fetch(guildID).catch((error) => {
-            console.error(`Failed to fetch guild with ID ${guildID}:`, error);
-            return null;
-        });
-
-        if (!guild || !guild.roles || !guild.roles.cache) {
-            return [];
-        }
-
-        console.log(`Guild fetched successfully: ${guild.name}`);
-        const roles = guild.roles.cache
-            .filter(r => !r.managed && r.name !== '@everyone')
-            .map(r => ({ id: r.id, name: r.name }));
-
-        return roles;
-    };
-
     router.get('/', async (req, res) => {
         const config = client.config;
-        let roles = [];
         let message = req.query.message || null;
         let error = req.query.error || null;
 
-        roles = await fetchGuildAndRoles(config).catch(() => []);
+        const data = await getGuildData(client).catch(() => ({ roles: [] }));
+        const roles = data.roles || [];
 
         if (!config.ticketOptions) config.ticketOptions = [];
         if (!config.optionConfig) config.optionConfig = {};
@@ -46,9 +23,8 @@ module.exports = (client) => {
     router.post('/add', async (req, res) => {
         const configPath = path.resolve(__dirname, '../../../config.json');
         let config = client.config;
-        let roles = [];
-
-        roles = await fetchGuildAndRoles(config).catch(() => []);
+        const data = await getGuildData(client).catch(() => ({ roles: [] }));
+        const roles = data.roles || [];
 
         if (!config.ticketOptions) config.ticketOptions = [];
         if (!config.optionConfig) config.optionConfig = {};

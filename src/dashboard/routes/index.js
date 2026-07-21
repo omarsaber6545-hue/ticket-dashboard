@@ -1,6 +1,6 @@
 const express = require('express');
 const path = require('path');
-const { ChannelType } = require('discord.js');
+const { getGuildData } = require('../discordData');
 
 module.exports = (client) => {
     const router = express.Router();
@@ -22,41 +22,17 @@ module.exports = (client) => {
         let config = client.config;
         let channels = [];
         let categories = [];
-        let members = [];
         let totalMembers = 0;
         let onlineMembers = 0;
 
         try {
-            const guildID = config.guildID;
-            if (guildID && client && client.guilds && typeof client.guilds.fetch === 'function') {
-                console.log('Attempting to fetch guild with ID:', guildID);
-                const guild = await client.guilds.fetch(guildID).catch((error) => {
-                    console.error(`Failed to fetch guild with ID ${guildID}:`, error);
-                    return null;
-                });
-
-                if (guild) {
-                    console.log(`Guild fetched successfully: ${guild.name}`);
-                    channels = guild.channels.cache
-                        ? guild.channels.cache
-                            .filter(c => [ChannelType.GuildText, ChannelType.GuildVoice].includes(c.type))
-                            .map(c => ({ id: c.id, name: c.name, type: c.type }))
-                        : [];
-
-                    categories = guild.channels.cache
-                        ? guild.channels.cache
-                            .filter(c => c.type === ChannelType.GuildCategory)
-                            .map(c => ({ id: c.id, name: c.name }))
-                        : [];
-
-                    await guild.members.fetch().catch(() => {});
-                    members = guild.members.cache || new Map();
-                    totalMembers = members.size || 0;
-                    onlineMembers = members.filter ? members.filter(member => member.presence && member.presence.status !== 'offline').size : 0;
-                }
-            }
+            const data = await getGuildData(client);
+            channels = data.channels;
+            categories = data.categories;
+            totalMembers = data.totalMembers;
+            onlineMembers = data.onlineMembers;
         } catch (error) {
-            console.error('Non-fatal error loading guild data for dashboard:', error);
+            console.error('Error fetching guild data:', error);
         }
 
         const ticketCount = config.optionConfig ? Object.keys(config.optionConfig).length : 0;
